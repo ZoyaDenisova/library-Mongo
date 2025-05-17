@@ -96,6 +96,7 @@ func main() {
 	r.POST("/users/login", userHandler.Login)
 	r.GET("/users/search", userHandler.SearchUsers)
 	r.PUT("/users", userHandler.UpdateUser)
+	r.POST("/users", userHandler.RegisterUser)
 	r.GET("/users/:id", userHandler.GetUserByID)
 
 	srv := &http.Server{
