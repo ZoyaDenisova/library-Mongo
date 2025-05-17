@@ -1,0 +1,749 @@
+basePath: /
+definitions:
+  domain.Book:
+    properties:
+      author:
+        description: автор
+        type: string
+      genre:
+        description: жанр
+        type: string
+      id:
+        description: строковый ID
+        type: string
+      title:
+        description: название книги
+        type: string
+      year:
+        description: год издания
+        type: integer
+    type: object
+  domain.Borrow:
+    properties:
+      bookId:
+        description: ObjectID книги
+        type: string
+      borrowedAt:
+        description: Дата выдачи
+        type: string
+      clientId:
+        description: ObjectID читателя
+        type: string
+      id:
+        description: строковый ID
+        type: string
+      returnedAt:
+        description: null, если ещё не вернули
+        type: string
+    type: object
+  domain.BorrowStat:
+    properties:
+      date:
+        description: YYYY-MM-DD
+        type: string
+      uniqueReaders:
+        description: кол-во уникальных читателей
+        type: integer
+    type: object
+  domain.User:
+    properties:
+      fullName:
+        description: ФИО
+        type: string
+      id:
+        description: строковый ID
+        type: string
+      isActive:
+        description: активен или заблокирован
+        type: boolean
+      password:
+        description: пароль (пока не хэшируется)
+        type: string
+      phone:
+        description: телефон
+        type: string
+      registeredAt:
+        description: дата регистрации (ISO string)
+        type: string
+      role:
+        description: '"admin", "librarian", "reader"'
+        type: string
+    type: object
+  dto.BorrowBookInput:
+    properties:
+      bookId:
+        type: string
+      userId:
+        type: string
+    type: object
+  dto.BorrowHistoryItem:
+    properties:
+      author:
+        type: string
+      bookId:
+        type: string
+      borrowId:
+        type: string
+      borrowedAt:
+        type: string
+      returnedAt:
+        type: string
+      status:
+        description: '"ok" / "overdue"'
+        type: string
+      title:
+        type: string
+    type: object
+  dto.BorrowHistoryResponse:
+    properties:
+      fullName:
+        type: string
+      history:
+        items:
+          $ref: '#/definitions/dto.BorrowHistoryItem'
+        type: array
+      phone:
+        type: string
+      userId:
+        type: string
+    type: object
+  dto.CountResponse:
+    properties:
+      count:
+        type: integer
+    type: object
+  dto.CreateBookInput:
+    properties:
+      author:
+        type: string
+      genre:
+        type: string
+      title:
+        type: string
+      year:
+        type: integer
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      phone:
+        type: string
+    type: object
+  dto.OverdueReportItem:
+    properties:
+      author:
+        type: string
+      bookId:
+        type: string
+      borrowedAt:
+        type: string
+      daysOverdue:
+        type: integer
+      fullName:
+        type: string
+      phone:
+        type: string
+      title:
+        type: string
+      totalOverdue:
+        description: для повторяющихся читателей
+        type: integer
+      userId:
+        type: string
+    type: object
+  dto.RegisterUserInput:
+    properties:
+      fullName:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        description: '"reader", "librarian", "admin"'
+        type: string
+    type: object
+  dto.ReturnBookInput:
+    properties:
+      borrowId:
+        description: id конкретной выдачи
+        type: string
+    type: object
+  dto.StatusResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  dto.SuccessResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  dto.UpdateBookInput:
+    properties:
+      author:
+        type: string
+      genre:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      year:
+        type: integer
+    type: object
+  dto.UpdateUserInput:
+    properties:
+      fullName:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Сервис авторизации с JWT и Swagger UI.
+  title: Auth Service API
+  version: "1.0"
+paths:
+  /books:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные книги
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateBookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Добавить новую книгу
+      tags:
+      - books
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Обновляемые поля
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateBookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновить книгу
+      tags:
+      - books
+  /books/{id}:
+    delete:
+      parameters:
+      - description: ID книги
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить книгу
+      tags:
+      - books
+    get:
+      parameters:
+      - description: ID книги
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить книгу по ID
+      tags:
+      - books
+  /books/count:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Подсчитать общее количество книг
+      tags:
+      - books
+  /books/search:
+    get:
+      parameters:
+      - description: Название книги
+        in: query
+        name: title
+        type: string
+      - description: Автор
+        in: query
+        name: author
+        type: string
+      - collectionFormat: multi
+        description: Жанры (можно несколько)
+        in: query
+        items:
+          type: string
+        name: genre
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Book'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Поиск книг
+      tags:
+      - books
+  /borrow:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для выдачи
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BorrowBookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Borrow'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Выдача книги
+      tags:
+      - borrow
+  /borrow/active-count:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CountResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Кол-во активных выдач
+      tags:
+      - borrow
+  /borrow/history/{userID}:
+    get:
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BorrowHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: История выдач пользователя
+      tags:
+      - borrow
+  /borrow/overdue:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.OverdueReportItem'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Просроченные книги
+      tags:
+      - borrow
+  /borrow/return:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для возврата
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReturnBookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Возврат книги
+      tags:
+      - borrow
+  /borrow/stats:
+    get:
+      parameters:
+      - description: Дата начала (YYYY-MM-DD)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Дата конца (YYYY-MM-DD)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.BorrowStat'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: График нагрузки (уникальные читатели)
+      tags:
+      - borrow
+  /users:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные обновления
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Обновление пользователя
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Удалить пользователя
+      tags:
+      - users
+    get:
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить пользователя по ID
+      tags:
+      - users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Телефон и пароль
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Аутентификация пользователя
+      tags:
+      - users
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterUserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - users
+  /users/search:
+    get:
+      parameters:
+      - description: ФИО
+        in: query
+        name: fullName
+        type: string
+      - description: Телефон
+        in: query
+        name: phone
+        type: string
+      - description: Роль
+        in: query
+        name: role
+        type: string
+      - description: Только активные
+        in: query
+        name: onlyActive
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Поиск пользователей
+      tags:
+      - users
+swagger: "2.0"
